@@ -1,51 +1,49 @@
-# creates the solver model for reweighing
-#
-# inputs:
-# - F ... numeric feature matrix (n x k) where n is the number of observations
-#         and k is the number of features where n >> p
-# - w ... numeric vector of original weights (length n)
-# - p ... numeric vector of desired prevalence (length k); if the features are
-#         binary, p must be in [0, 1]; if the features are continuous, p may
-#         be any real number; in this case, it is not prevalence but weighted
-#         mean
-# - lambda ... penalty on errors (scalar or vector of length k)
-# - lb_weights ... lower bound for the weights (scalar of vector of length n)
-# - ub_weights ... upper bound for the weights (scalar of vector of length n)
-# - lb_errors ... lower bound for the errors (scalar or vector of length k)
-# - ub_errors ... upper bound for the errors (scalar or vector of length k)
-# - scaling ... scaling method for weights and features; one of "none",
-#               "weights", or "auto"; see details
-# - weight_scale ... scaling factor for the weights (scalar)
-#
-# output:
-# model specification for cohort reweighing
-#
-# details:
-# - scaling
-#   - equal to "none" means no scaling;
-#   - equal to "weights" means that weights are scaled so that their
-#     average is equal to weight_scale; features are not scaled;
-#   - equal to "auto" means that weights are scaled so that the average
-#     weight is equal to weight_scale if given or to 1 if n <= 1000 or to
-#     sqrt(n / 1000) if n > 1000; features are standardized to have mean 0 and
-#     standard deviation 1; p and bounds are scaled accordingly
-# - if a feature is continuous instead of binary, its corresponding prevalence
-#   is not a prevalence but its weighted mean; increased bounds may be necessary
-# - BEWARE: many continuous features may require big changes in weights;
-#   some weights may become huge, i.e., a great part of the new cohort may be
-#   represented by few individuals and the error in prevalence may still be huge
-#
-# typical use:
-# - for binary features:
-#   solver_model(F, W, p) or
-#   solver_model(F, W, p, scaling = "weights") when n is large
-# - for mix of binary and continuous features or continuous features with very
-#   different means/ranges:
-#   solver_model(F, W, p, scaling = "auto")
-# - with many continuous features, lower lb_errors and increase ub_errors but
-#   be careful
-# - if several individuals have too high weights, lower ub_weights
-# - if no solution is found, lower lb_errors and increase ub_errors
+#' Creates the solver model for reweighing
+#'
+#' @param F numeric feature matrix (n x k) where n is the number of observations
+#'   and k is the number of features where n >> p.
+#' @param w numeric vector of original weights (length n).
+#' @param p numeric vector of desired prevalence (length k); if the features are
+#'   binary, p must be in [0, 1]; if the features are continuous, p may be any
+#'   real number; in this case, it is not prevalence but weighted mean.
+#' @param lambda penalty on errors (scalar or vector of length k).
+#' @param lb_weights lower bound for the weights (scalar of vector of length n).
+#' @param ub_weights upper bound for the weights (scalar of vector of length n).
+#' @param lb_errors lower bound for the errors (scalar or vector of length k).
+#' @param ub_errors upper bound for the errors (scalar or vector of length k).
+#' @param scaling scaling method for weights and features; one of "none",
+#'   "weights", or "auto"; see details.
+#' @param weight_scale scaling factor for the weights (scalar).
+#'
+#' @return model specification for cohort reweighing.
+#'
+#' @details
+#' - scaling
+#'   - equal to "none" means no scaling;
+#'   - equal to "weights" means that weights are scaled so that their
+#'     average is equal to weight_scale; features are not scaled;
+#'   - equal to "auto" means that weights are scaled so that the average
+#'     weight is equal to weight_scale if given or to 1 if n <= 1000 or to
+#'     sqrt(n / 1000) if n > 1000; features are standardized to have mean 0 and
+#'     standard deviation 1; p and bounds are scaled accordingly
+#' - if a feature is continuous instead of binary, its corresponding prevalence
+#'   is not a prevalence but its weighted mean; increased bounds may be necessary
+#' - BEWARE: many continuous features may require big changes in weights;
+#'   some weights may become huge, i.e., a great part of the new cohort may be
+#'   represented by few individuals and the error in prevalence may still be huge
+#'
+#' @section Typical use:
+#' - for binary features:
+#'   `solver_model(F, W, p)` or
+#'   `solver_model(F, W, p, scaling = "weights")` when n is large
+#' - for mix of binary and continuous features or continuous features with very
+#'   different means/ranges:
+#'   `solver_model(F, W, p, scaling = "auto")`
+#' - with many continuous features, lower lb_errors and increase ub_errors but
+#'   be careful
+#' - if several individuals have too high weights, lower ub_weights
+#' - if no solution is found, lower lb_errors and increase ub_errors
+#' @keywords internal
 solver_model <- function(
   F, w, p,
   lambda = 1e3L,
@@ -153,7 +151,14 @@ solver_model <- function(
   )
 }
 
-# reweighs with gurobi
+#' Reweighs with Gurobi
+#'
+#' @param model The model created by `solver_model`.
+#' @param verbose If `TRUE`, solver output is printed.
+#' @param ... Additional parameters for the Gurobi solver.
+#'
+#' @return A list with the optimization results.
+#' @keywords internal
 reweigh_gurobi <- function(model, verbose, ...) {
   params <- list(...)
   if (!verbose) params$OutputFlag <- 0
@@ -167,7 +172,14 @@ reweigh_gurobi <- function(model, verbose, ...) {
   )
 }
 
-# reweighs with highs
+#' Reweighs with HiGHS
+#'
+#' @param model The model created by `solver_model`.
+#' @param verbose If `TRUE`, solver output is printed.
+#' @param ... Additional parameters for the HiGHS solver.
+#'
+#' @return A list with the optimization results.
+#' @keywords internal
 reweigh_highs <- function(model, verbose, ...) {
   cntrl <- list(...)
   if (verbose) cntrl$log_to_console <- TRUE
@@ -192,29 +204,38 @@ reweigh_highs <- function(model, verbose, ...) {
   )
 }
 
-# finds new weights that are as close as possible to the original weights to
-# achieve the desired prevalence
-#
-# inputs:
-# - for the other parameters, see `solver_model()` function
-# - solver ... solver to use (either "gurobi" or "highs"); the solver must be
-#   installed on the system
-# - verbose ... logical flag; if TRUE, solver output is printed;
-#   default is FALSE
-# - ... ... additional solver parameters
-#
-# option:
-# - F may be a data frame consisting of numeric columns only;
-#   if weights are stored as a column in F, w may be the name of that
-#   column (character); in this case, the column is removed from F
-#
-# output:
-# a list with the following elements:
-# - status ... optimization status
-# - weights ... numeric vector of new weights (length n)
-# - prevalence_error ... numeric vector of prevalence error (length k)
-# - objective_value ... numeric value of the objective function
-# - solver ... original solver result
+#' Finds new weights that are as close as possible to the original weights to
+#' achieve the desired prevalence
+#'
+#' @param F A numeric feature matrix (n x k) or a data.frame. If a data.frame,
+#'   it may contain the weight column specified by `w`.
+#' @param w A numeric vector of original weights (length n). If `F` is a
+#'   data.frame, `w` can be the name of the weight column in `F`.
+#' @param p A numeric vector of desired prevalences (length k).
+#' @param lambda The penalty on errors (a scalar or a vector of length k).
+#' @param lb_weights The lower bound for the weights (a scalar or a vector of
+#'   length n).
+#' @param ub_weights The upper bound for the weights (a scalar or a vector of
+#'   length n).
+#' @param lb_errors The lower bound for the errors (a scalar or a vector of
+#'   length k).
+#' @param ub_errors The upper bound for the errors (a scalar or a vector of
+#'   length k).
+#' @param scaling The scaling method for weights and features. One of "none",
+#'   "weights", or "auto". See [solver_model()] for details.
+#' @param weight_scale The scaling factor for the weights.
+#' @param solver The solver to use, either "gurobi" or "highs". The solver must
+#'   be installed.
+#' @param verbose If `TRUE`, solver output is printed. Default is `FALSE`.
+#' @param ... Additional parameters passed to the solver.
+#'
+#' @return A list with the following elements:
+#'   - `status`: The optimization status.
+#'   - `weights`: A numeric vector of new weights (length n).
+#'   - `prevalence_error`: A numeric vector of prevalence errors (length k).
+#'   - `objective_value`: The numeric value of the objective function.
+#'   - `solver`: The original solver result.
+#' @export
 reweigh <- function(
   F, w, p,
   lambda = 1e3L,
