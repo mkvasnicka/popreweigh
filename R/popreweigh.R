@@ -4,8 +4,9 @@
 #'   and k is the number of features where n >> p.
 #' @param w numeric vector of original weights (length n).
 #' @param p numeric vector of desired prevalence (length k); if the features are
-#'   binary, p must be in [0, 1]; if the features are continuous, p may be any
-#'   real number; in this case, it is not prevalence but weighted mean.
+#'   binary, p must be in interval between zero to one including; if the features
+#'   are continuous, p may be any real number; in this case, it is not prevalence
+#'   but weighted mean.
 #' @param lambda penalty on errors (scalar or vector of length k).
 #' @param lb_weights lower bound for the weights (scalar of vector of length n).
 #' @param ub_weights upper bound for the weights (scalar of vector of length n).
@@ -254,10 +255,10 @@ reweigh <- function(
     if (is.character(w)) {
       wn <- w
       w <- F[[w]]
-      F <- F |> select(-all_of(wn))
+      F <- F |> dplyr::select(-dplyr::all_of(wn))
     }
     F <- F |>
-      mutate(across(everything(), as.numeric)) |>
+      dplyr::mutate(dplyr::across(dplyr::everything(), as.numeric)) |>
       as.matrix()
     stopifnot(!any(is.na(F)))
   }
