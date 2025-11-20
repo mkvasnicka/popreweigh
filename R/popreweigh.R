@@ -165,6 +165,9 @@ solver_model <- function(
 #' @return A list with the optimization results.
 #' @keywords internal
 reweigh_gurobi <- function(model, verbose, ...) {
+  if (!requireNamespace("gurobi", quietly = TRUE)) {
+    stop("The 'gurobi' package is required for this function.")
+  }
   params <- list(...)
   if (!verbose) params$OutputFlag <- 0
   result <- gurobi::gurobi(model, params = params)
@@ -186,6 +189,9 @@ reweigh_gurobi <- function(model, verbose, ...) {
 #' @return A list with the optimization results.
 #' @keywords internal
 reweigh_highs <- function(model, verbose, ...) {
+  if (!requireNamespace("highs", quietly = TRUE)) {
+    stop("The 'highs' package is required for this function.")
+  }
   cntrl <- list(...)
   if (verbose) cntrl$log_to_console <- TRUE
   cntrl$solver <- "choose"  # necessary to use QP solver
