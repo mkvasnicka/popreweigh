@@ -1,3 +1,7 @@
+#' @importFrom methods as
+#' @importFrom stats sd setNames
+NULL
+
 #' Creates the solver model for reweighing
 #'
 #' @param F numeric feature matrix (n x k) where n is the number of observations

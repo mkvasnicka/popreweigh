@@ -2,3 +2,6 @@
 
 export(reweigh)
 export(reweigh_fem)
+importFrom(methods,as)
+importFrom(stats,sd)
+importFrom(stats,setNames)
