@@ -192,7 +192,9 @@ reweigh_highs <- function(model, verbose, ...) {
   if (!requireNamespace("highs", quietly = TRUE)) {
     stop("The 'highs' package is required for this function.")
   }
-  cntrl <- list(...)
+  cntrl_user <- list(...)
+  cntrl <- list(user_bound_scale = 5)
+  cntrl <- c(cntrl[setdiff(names(cntrl), names(cntrl_user))], cntrl_user)
   if (verbose) cntrl$log_to_console <- TRUE
   cntrl$solver <- "choose"  # necessary to use QP solver
   result <- highs::highs_solve(
@@ -235,8 +237,8 @@ reweigh_highs <- function(model, verbose, ...) {
 #' @param scaling The scaling method for weights and features. One of "none",
 #'   "weights", or "auto". See [solver_model()] for details.
 #' @param weight_scale The scaling factor for the weights.
-#' @param solver The solver to use, either "gurobi" or "highs". The solver must
-#'   be installed.
+#' @param solver The solver to use, either "gurobi" or "highs". The solver's
+#'   R package must be installed.
 #' @param verbose If `TRUE`, solver output is printed. Default is `FALSE`.
 #' @param ... Additional parameters passed to the solver.
 #'
@@ -246,6 +248,13 @@ reweigh_highs <- function(model, verbose, ...) {
 #'   - `prevalence_error`: A numeric vector of prevalence errors (length k).
 #'   - `objective_value`: The numeric value of the objective function.
 #'   - `solver`: The original solver result.
+#'
+#' @details
+#' If HiGHS is used as the solver, HiGHS parameter `user_bound_scale` is
+#' set to 5 by default. This parameter can be changed by passing it as an
+#' additional argument to the `reweigh()` function. HiGHS version 1.14.0
+#' or later is required.
+#'
 #' @export
 reweigh <- function(
   F, w, p,
@@ -330,6 +339,13 @@ reweigh <- function(
 #'
 #' @return A data.frame identical to the input `donors` but with the
 #'   `weight_var` column updated with the new weights.
+#'
+#' @details
+#' If HiGHS is used as the solver, HiGHS parameter `user_bound_scale` is
+#' set to 5 by default. This parameter can be changed by passing it as an
+#' additional argument to the `reweigh()` function. HiGHS version 1.14.0
+#' or later is required.
+#'
 #' @export
 # TODO: not working with HiGHS solver currently
 # TODO: improve printed diagnostics
