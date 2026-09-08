@@ -193,7 +193,7 @@ reweigh_highs <- function(model, verbose, ...) {
     stop("The 'highs' package is required for this function.")
   }
   cntrl_user <- list(...)
-  cntrl <- list(user_bound_scale = 5)
+  cntrl <- list(user_bound_scale = 4)
   cntrl <- c(cntrl[setdiff(names(cntrl), names(cntrl_user))], cntrl_user)
   if (verbose) cntrl$log_to_console <- TRUE
   cntrl$solver <- "choose"  # necessary to use QP solver
